@@ -67,7 +67,6 @@ func Wrap(err error, annotators ...Annotator) error {
 	}
 
 	if _, ok := err.(*Error); !ok {
-		fmt.Println("------call WithCallers")
 		err = WithCallers(1)(err)
 	}
 
