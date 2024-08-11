@@ -101,8 +101,6 @@ func WithCallers(offset int) Annotator {
 // The error message includes the reason, code, and message.
 func (e *Error) Error() string {
 	return fmt.Sprintf("reason: %s code: %d message: %s", Reason(e).String(), Code(e), e.err.Error())
-	// protocol buffersで定義している場合以下のようになります。
-	//return fmt.Sprintf("'%s: %s", e.reason.String(), e.err.Error())
 }
 
 // Unwrap returns the original error.
