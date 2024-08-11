@@ -4,9 +4,9 @@ This library provides a customizable error type that integrates with Bugsnag for
 
 ## Features
 
-	•	Stack Trace Integration: Errors created with this library automatically include stack traces that can be sent to Bugsnag for easy debugging.
-	•	Error Annotation: You can add additional context to your errors using WithCode and WithReason functions.
-	•	Selective Reporting: Control which errors get reported to Bugsnag using the WithIgnoreReport function.
+ - Stack Trace Integration: Errors created with this library automatically include stack traces that can be sent to Bugsnag for easy debugging.
+ - wrror Annotation: You can add additional context to your errors using WithCode and WithReason functions.
+ - selective Reporting: Control which errors get reported to Bugsnag using the WithIgnoreReport function.
 
 ## Usage
 
@@ -15,6 +15,8 @@ This library provides a customizable error type that integrates with Bugsnag for
 To create a custom error that includes a stack trace, use the NewError function provided by the library.
 
 ```go
+package main
+
 import "github.com/kanmo/werror"
 
 // Create a basic error
@@ -27,6 +29,13 @@ You can annotate your errors with additional context, such as a code or a reason
 reason needs implementation of Stringer interface.
 
 ```go
+package main
+
+import (
+    "github.com/kanmo/werror"
+    "google.golang.org/grpc/codes"
+)
+
 err := errors.New("Something went wrong")
 err = werror.Wrap(err, WithCode(codes.InvalidArgument), WithReason("The operation is not allowed"))
 ```
@@ -36,6 +45,10 @@ err = werror.Wrap(err, WithCode(codes.InvalidArgument), WithReason("The operatio
 If you want to prevent certain errors from being reported to Bugsnag, use the WithIgnoreReport function.
 
 ```go
+package main
+
+import "github.com/kanmo/werror"
+
 err := errors.New("Something went wrong")
 err = werror.Wrap(err, WithIgnoreReport())
 ```
@@ -48,6 +61,8 @@ Simply pass the error to Bugsnag as usual:
 (see: https://github.com/bugsnag/bugsnag-go) 
 
 ```go
+package main
+
 import (
 	"context"
 	"github.com/bugsnag/bugsnag-go/v2"
@@ -91,4 +106,3 @@ func main() {
 ## License
 
 This library is licensed under the MIT License. See the [LICENSE.txt](LICENSE.txt) file for details.
-```

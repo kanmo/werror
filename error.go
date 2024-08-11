@@ -119,11 +119,8 @@ func (e *Error) Callers() []uintptr {
 
 // ShouldReport returns whether the error should be reported.
 func ShouldReport(err error) bool {
-	type report interface {
-		ShouldReport() bool
-	}
-	if r, ok := err.(report); ok {
-		return r.ShouldReport()
+	if r, ok := err.(*Error); ok {
+		return r.shouldReport
 	}
 	return true
 }
@@ -179,10 +176,13 @@ func WithIgnoreReport() Annotator {
 			return werr
 		}
 
-		return &Error{
+		werr := &Error{
 			err:          err,
+			reason:       emptyReason{},
+			code:         codes.Unknown,
 			shouldReport: false,
 		}
+		return WithCallers(1)(werr)
 	}
 }
 

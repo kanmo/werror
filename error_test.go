@@ -11,6 +11,7 @@ import (
 
 func TestNew(t *testing.T) {
 	err := New("werror")
+	assert.NotNil(t, err)
 	assert.Equal(t, fmt.Sprintf("reason:  code: %d message: werror", codes.Unknown), err.Error())
 	assert.Equal(t, true, err.(*Error).shouldReport)
 	callers := err.(*Error).Callers()
@@ -79,6 +80,36 @@ func TestWithReason(t *testing.T) {
 		err := errors.New("werror")
 		err = Wrap(err, WithReason("test"))
 		assert.Equal(t, fmt.Sprintf("reason:  code: %d message: werror", codes.Unknown), err.Error())
+	})
+}
+
+func TestWithIgnoreReport(t *testing.T) {
+	t.Run("ignore report", func(t *testing.T) {
+		err := errors.New("werror")
+		err = Wrap(err, WithIgnoreReport())
+		assert.Equal(t, fmt.Sprintf("reason:  code: %d message: werror", codes.Unknown), err.Error())
+		assert.Equal(t, false, err.(*Error).shouldReport)
+	})
+
+	t.Run("not ignore report", func(t *testing.T) {
+		err := errors.New("werror")
+		err = Wrap(err)
+		assert.Equal(t, fmt.Sprintf("reason:  code: %d message: werror", codes.Unknown), err.Error())
+		assert.Equal(t, true, err.(*Error).shouldReport)
+	})
+}
+
+func TestShouldReport(t *testing.T) {
+	t.Run("should report", func(t *testing.T) {
+		err := errors.New("werror")
+		err = Wrap(err)
+		assert.Equal(t, true, ShouldReport(err))
+	})
+
+	t.Run("should not report", func(t *testing.T) {
+		err := errors.New("werror")
+		err = Wrap(err, WithIgnoreReport())
+		assert.Equal(t, false, ShouldReport(err))
 	})
 }
 
