@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bugsnag/bugsnag-go/v2"
+	"os"
 	"time"
 	"werror"
 	// If you are using this library in your own project,
@@ -12,10 +13,9 @@ import (
 	// "github.com/kanmo/werror"
 )
 
-// Insert your API key
-const apiKey = "Your API Jey Comes Here"
-
 func main() {
+	// Set your API key to Environment variable
+	apiKey := os.Getenv("BUGSNAG_API_KEY")
 	if len(apiKey) != 32 {
 		fmt.Println("Please set your API key in main.go before running example.")
 		return
