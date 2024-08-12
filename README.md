@@ -37,7 +37,7 @@ import (
 )
 
 err := errors.New("Something went wrong")
-err = werror.Wrap(err, WithCode(codes.InvalidArgument), WithReason("The operation is not allowed"))
+err = werror.Wrap(err, WithCode(codes.InvalidArgument))
 ```
 
 ### Ignoring Errors for Bugsnag Reporting

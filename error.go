@@ -1,9 +1,9 @@
 package werror
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 )
@@ -25,7 +25,9 @@ import (
 // Error implements ErrorWithCallers interface of bugsnag-go.
 // see: https://github.com/bugsnag/bugsnag-go/blob/b31bbecd4eb6e307dd7738f729ab51973244d903/v2/errors/error.go#L26-L29
 type Error struct {
+	cause        error
 	err          error
+	messages     []string
 	reason       ErrorReason
 	shouldReport bool
 	code         codes.Code
@@ -47,12 +49,25 @@ type Annotator func(error) error
 // New creates a new error with the given text.
 func New(text string) error {
 	err := &Error{
-		err:          errors.New(text),
+		messages:     []string{text},
 		reason:       emptyReason{},
 		code:         codes.Unknown,
 		shouldReport: true,
 	}
 	return WithCallers(1)(err)
+}
+
+// NewFromStandardError creates a new *Error from the given error.
+// If the error is not *Error, create a new *Error.
+// we do not specify err field because bugsnag needs ErrorWithCallers interface.
+func NewFromStandardError(err error) *Error {
+	return &Error{
+		cause:        err,
+		messages:     []string{err.Error()},
+		code:         codes.Unknown,
+		reason:       emptyReason{},
+		shouldReport: true,
+	}
 }
 
 // Wrap annotates an error with the given annotators.
@@ -86,20 +101,16 @@ func WithCallers(offset int) Annotator {
 			return werr
 		}
 
-		return &Error{
-			err:          err,
-			code:         codes.Unknown,
-			reason:       emptyReason{},
-			shouldReport: true,
-			callers:      createCallers(offset + 1),
-		}
+		werr := NewFromStandardError(err)
+		werr.callers = createCallers(offset + 1)
+		return werr
 	}
 }
 
 // Error returns the error message.
 // The error message includes the reason, code, and message.
 func (e *Error) Error() string {
-	return fmt.Sprintf("reason: %s code: %d message: %s", Reason(e).String(), Code(e), e.err.Error())
+	return fmt.Sprintf("reason: %s, code: %d, message: %s", Reason(e).String(), Code(e), Message(e))
 }
 
 // Unwrap returns the original error.
@@ -111,6 +122,9 @@ func (e *Error) Unwrap() error {
 // This is used by bugsnag to display the stack trace.
 // see: https://github.com/bugsnag/bugsnag-go/blob/b31bbecd4eb6e307dd7738f729ab51973244d903/v2/errors/error.go#L26-L29
 func (e *Error) Callers() []uintptr {
+	if e.callers == nil {
+		return []uintptr{}
+	}
 	return e.callers
 }
 
@@ -130,12 +144,8 @@ func WithCode(code codes.Code) Annotator {
 			return werr
 		}
 
-		werr := &Error{
-			err:          err,
-			code:         code,
-			reason:       emptyReason{},
-			shouldReport: true,
-		}
+		werr := NewFromStandardError(err)
+		werr.code = code
 
 		return WithCallers(1)(werr)
 	}
@@ -150,12 +160,9 @@ func WithReason(reason interface{}) Annotator {
 				return werr
 			}
 
-			werr := &Error{
-				err:          err,
-				reason:       errReason,
-				code:         codes.Unknown,
-				shouldReport: true,
-			}
+			werr := NewFromStandardError(err)
+			werr.reason = errReason
+
 			return WithCallers(1)(werr)
 		}
 	}
@@ -173,12 +180,23 @@ func WithIgnoreReport() Annotator {
 			return werr
 		}
 
-		werr := &Error{
-			err:          err,
-			reason:       emptyReason{},
-			code:         codes.Unknown,
-			shouldReport: false,
+		werr := NewFromStandardError(err)
+		werr.shouldReport = false
+
+		return WithCallers(1)(werr)
+	}
+}
+
+func WithMessage(message string) Annotator {
+	return func(err error) error {
+		if werr, ok := err.(*Error); ok {
+			werr.messages = append(werr.messages, message)
+			return werr
 		}
+
+		werr := NewFromStandardError(err)
+		werr.messages = append(werr.messages, message)
+
 		return WithCallers(1)(werr)
 	}
 }
@@ -200,6 +218,14 @@ func Reason(err error) ErrorReason {
 	}
 
 	return emptyReason{}
+}
+
+func Message(err error) string {
+	if werr, ok := err.(*Error); ok {
+		return strings.Join(werr.messages, " : ")
+	}
+
+	return ""
 }
 
 func createCallers(offset int) []uintptr {
